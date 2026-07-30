@@ -29,25 +29,28 @@ class ExcelReader(Reader):
 
     def read(self, file_path: Path) -> list[dict[str, Any]]:
         workbook = load_workbook(filename=file_path, read_only=True, data_only=True)
-        worksheet = workbook.active
-        rows = worksheet.iter_rows(values_only=True)
-
         try:
-            header_row = next(rows)
-        except StopIteration:
-            return []
+            worksheet = workbook.active
+            rows = worksheet.iter_rows(values_only=True)
 
-        headers = [self._normalize_header_value(value) for value in header_row]
-        records: list[dict[str, Any]] = []
+            try:
+                header_row = next(rows)
+            except StopIteration:
+                return []
 
-        for row in rows:
-            record: dict[str, Any] = {}
-            for header, cell_value in zip(headers, row):
-                if header:
-                    record[header] = cell_value
-            records.append(record)
+            headers = [self._normalize_header_value(value) for value in header_row]
+            records: list[dict[str, Any]] = []
 
-        return records
+            for row in rows:
+                record: dict[str, Any] = {}
+                for header, cell_value in zip(headers, row):
+                    if header:
+                        record[header] = cell_value
+                records.append(record)
+
+            return records
+        finally:
+            workbook.close()
 
     @staticmethod
     def _normalize_header_value(value: Any) -> str:

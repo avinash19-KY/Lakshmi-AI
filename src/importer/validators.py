@@ -52,9 +52,12 @@ class FileValidator:
         from openpyxl import load_workbook
 
         workbook = load_workbook(filename=file_path, read_only=True, data_only=True)
-        worksheet = workbook.active
-        header_row = next(worksheet.iter_rows(values_only=True), [])
-        return [str(value) if value is not None else "" for value in header_row]
+        try:
+            worksheet = workbook.active
+            header_row = next(worksheet.iter_rows(values_only=True), [])
+            return [str(value) if value is not None else "" for value in header_row]
+        finally:
+            workbook.close()
 
     def _normalize_column_name(self, column_name: str) -> str:
         normalized = str(column_name or "").strip().lower()
