@@ -19,3 +19,15 @@ def calculate_monthly_goal_contribution(
         return 0.0
 
     return remaining_amount / (duration_years * 12)
+
+
+def calculate_goal_funding_gap(
+    remaining_amount: float,
+    duration_years: int,
+    monthly_surplus: float,
+) -> float:
+    """Compare required monthly goal funding with current monthly surplus."""
+    required_contribution = calculate_monthly_goal_contribution(
+        remaining_amount, duration_years
+    )
+    return required_contribution - monthly_surplus

@@ -18,7 +18,9 @@ from src.rules.financial_health import (
     calculate_savings_rate_score,
 )
 from src.rules.investment_capacity import calculate_investment_capacity
+from src.rules.investment_readiness import assess_investment_readiness
 from src.rules.goals import (
+    calculate_goal_funding_gap,
     calculate_goal_progress,
     calculate_monthly_goal_contribution,
     calculate_remaining_goal_amount,
@@ -112,6 +114,7 @@ def main():
     print(f"Target Amount     : ₹{emergency_target_amount:,.2f}")
     print(f"More to Save      : ₹{emergency_fund_gap:,.2f}")
 
+    goal_funding_gap = 0.0
     for goal in goals:
         progress = calculate_goal_progress(goal.current_amount, goal.target_amount)
         remaining_amount = calculate_remaining_goal_amount(
@@ -122,6 +125,9 @@ def main():
         )
         monthly_for_20_years = calculate_monthly_goal_contribution(
             remaining_amount, 20
+        )
+        goal_funding_gap = calculate_goal_funding_gap(
+            remaining_amount, 20, monthly_surplus
         )
 
         print()
@@ -134,6 +140,23 @@ def main():
         print("Full-value funding scenarios (before investment returns):")
         print(f"15 years          : ₹{monthly_for_15_years:,.2f}/month")
         print(f"20 years          : ₹{monthly_for_20_years:,.2f}/month")
+        if goal_funding_gap > 0:
+            print(
+                f"20-year funding gap: ₹{goal_funding_gap:,.2f}/month "
+                "above current surplus"
+            )
+        else:
+            print(
+                f"20-year funding headroom: ₹{abs(goal_funding_gap):,.2f}/month"
+            )
+
+
+    investment_readiness = assess_investment_readiness(
+        emergency_fund_months=emergency_fund_months,
+        emergency_target_months=12,
+        goal_funding_gap=goal_funding_gap,
+        monthly_surplus=monthly_surplus,
+    )
 
     print()
     print("Asset Allocation")
@@ -158,6 +181,9 @@ def main():
         f"Maximum New Risk Capital: ₹{investment_capacity.maximum_new_risk_capital:,.2f}"
     )
     print(f"Reason               : {investment_capacity.reason}")
+    print(f"Decision Readiness   : {investment_readiness.status}")
+    for reason in investment_readiness.reasons:
+        print(f"- {reason}")
 
     print()
     print("Portfolio Intelligence")

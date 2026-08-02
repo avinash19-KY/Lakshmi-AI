@@ -16,6 +16,13 @@ The newest phase adds rule-based Portfolio Intelligence so Lakshmi AI can point
 to the weakest part of the financial picture and suggest the next area to focus
 on. It also applies a conservative investment guardrail: positive monthly
 surplus is not treated as risk capital until the emergency-fund target is met.
+The next goal-aware check compares each goal's required monthly saving with the
+current monthly surplus.
+Before a specific investment is considered, the decision-readiness gate checks
+whether reserves, cash flow, and goal funding conditions support evaluation.
+The first local chat layer is available with `python -m src.chat` and answers
+the core status, emergency-fund, and investment-readiness questions from the
+same local data.
 
 ## Update your data
 
