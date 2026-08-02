@@ -11,6 +11,12 @@ def context() -> CfoContext:
         emergency_fund_gap=570000,
         financial_health_score=78.9,
         investment_readiness="PAUSE",
+        focus_area="Emergency Fund",
+        focus_reason="Build liquid reserves first.",
+        primary_goal_name="Parents' House",
+        primary_goal_remaining=13000000,
+        primary_goal_monthly_required=54166.67,
+        primary_goal_funding_gap=4166.67,
     )
 
 
@@ -34,7 +40,30 @@ def test_answers_investment_question_with_readiness() -> None:
     assert "PAUSE" in answer
 
 
-def test_explains_supported_questions() -> None:
+def test_answers_goal_question() -> None:
     answer = CfoQuestionService().answer("What is my goal?", context())
 
-    assert "How am I doing financially?" in answer
+    assert "Parents' House" in answer
+
+
+def test_answers_next_focus_question() -> None:
+    answer = CfoQuestionService().answer("What should I focus on next?", context())
+
+    assert "Emergency Fund" in answer
+    assert "Build liquid reserves" in answer
+
+
+def test_understands_natural_variations() -> None:
+    service = CfoQuestionService()
+
+    assert "Main gap" in service.answer("Where do I stand financially?", context())
+    assert "₹570,000" in service.answer("How much backup should I build?", context())
+    assert "PAUSE" in service.answer("Should I put money into a SIP?", context())
+
+
+def test_answers_goal_progress_question() -> None:
+    answer = CfoQuestionService().answer("Am I on track for my parents' house?", context())
+
+    assert "Parents' House" in answer
+    assert "₹54,167" in answer
+    assert "₹4,167" in answer

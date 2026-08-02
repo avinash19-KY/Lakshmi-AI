@@ -22,7 +22,10 @@ Before a specific investment is considered, the decision-readiness gate checks
 whether reserves, cash flow, and goal funding conditions support evaluation.
 The first local chat layer is available with `python -m src.chat` and answers
 the core status, emergency-fund, and investment-readiness questions from the
-same local data.
+same local data. It also surfaces the highest-priority focus area from
+Portfolio Intelligence.
+Financial Memory is opt-in: use `remember <note>` in the local chat to save a
+decision to `data/decision_journal.json`, or ask to show the decision journal.
 
 ## Update your data
 

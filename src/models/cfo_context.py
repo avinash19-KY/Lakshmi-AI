@@ -12,3 +12,9 @@ class CfoContext:
     emergency_fund_gap: float
     financial_health_score: float
     investment_readiness: str
+    focus_area: str
+    focus_reason: str
+    primary_goal_name: str
+    primary_goal_remaining: float
+    primary_goal_monthly_required: float
+    primary_goal_funding_gap: float
