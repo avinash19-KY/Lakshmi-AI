@@ -13,11 +13,13 @@ from src.rules.financial_health import (
     calculate_net_worth_score,
     calculate_savings_rate_score,
 )
+from src.rules.investment_capacity import calculate_investment_capacity
 from src.rules.goals import (
     calculate_goal_progress,
     calculate_monthly_goal_contribution,
     calculate_remaining_goal_amount,
 )
+from src.rules.portfolio_intelligence import build_portfolio_focus_insights
 from src.rules.net_worth import calculate_net_worth, total_value
 from src.services.profile_service import ProfileService
 
@@ -61,6 +63,16 @@ def main():
     net_worth_score = calculate_net_worth_score(net_worth)
     financial_health_score = calculate_financial_health_score(
         emergency_fund_months, savings_rate, net_worth
+    )
+    portfolio_insights = build_portfolio_focus_insights(
+        emergency_fund_months=emergency_fund_months,
+        savings_rate=savings_rate,
+        net_worth=net_worth,
+        allocation_by_category=allocation_by_category,
+    )
+    investment_capacity = calculate_investment_capacity(
+        monthly_surplus=monthly_surplus,
+        emergency_fund_months=emergency_fund_months,
     )
 
     print("Financial Profile")
@@ -124,6 +136,25 @@ def main():
     print(f"Emergency Reserve  : {emergency_fund_score:.1f} / 40 (12-month target)")
     print(f"Savings Capacity   : {savings_rate_score:.1f} / 40 (30% target)")
     print(f"Net Worth Position : {net_worth_score:.1f} / 20 (positive target)")
+
+    print()
+    print("Investment Guardrail")
+    print("-" * 60)
+    print(
+        f"Maximum New Risk Capital: ₹{investment_capacity.maximum_new_risk_capital:,.2f}"
+    )
+    print(f"Reason               : {investment_capacity.reason}")
+
+    print()
+    print("Portfolio Intelligence")
+    print("-" * 60)
+    if not portfolio_insights:
+        print("No major focus areas flagged. The current financial picture looks balanced.")
+    else:
+        for insight in portfolio_insights:
+            print(f"{insight.priority}. {insight.area}")
+            print(f"   Why: {insight.reason}")
+            print(f"   Next: {insight.recommendation}")
 
 
 if __name__ == "__main__":

@@ -10,6 +10,10 @@ coverage from structured financial data. It also tracks a goal and shows simple
 full-value funding scenarios without assuming investment returns, plus the
 current allocation of recorded assets by category. A transparent financial
 health score summarizes emergency reserves, savings capacity, and net worth.
+The newest phase adds rule-based Portfolio Intelligence so Lakshmi AI can point
+to the weakest part of the financial picture and suggest the next area to focus
+on. It also applies a conservative investment guardrail: positive monthly
+surplus is not treated as risk capital until the emergency-fund target is met.
 
 ## Update your data
 
@@ -42,6 +46,11 @@ Run the demo script to import these files, populate repositories, and print the 
 ```bash
 python scripts/demo_import_pipeline.py
 ```
+
+## Portfolio Intelligence
+
+The next phase is a rule-based focus layer that highlights the weakest part of
+the current financial picture and explains why it deserves attention.
 
 ## Run tests
 
