@@ -1,11 +1,25 @@
 from src.models.cfo_context import CfoContext
+from src.services.financial_review_service import FinancialReviewService
 
 
 class CfoQuestionService:
     """Answer a small set of explainable local CFO questions."""
 
+    def __init__(self) -> None:
+        self.review_service = FinancialReviewService()
+
     def answer(self, question: str, context: CfoContext) -> str:
         normalized = " ".join(question.strip().lower().split())
+
+        if _matches(
+            normalized,
+            "review",
+            "report",
+            "briefing",
+            "morning update",
+            "give me an update",
+        ):
+            return self.review_service.build_review(context)
 
         if _matches(
             normalized,

@@ -67,3 +67,10 @@ def test_answers_goal_progress_question() -> None:
     assert "Parents' House" in answer
     assert "₹54,167" in answer
     assert "₹4,167" in answer
+
+
+def test_answers_review_request() -> None:
+    answer = CfoQuestionService().answer("Give me a quick financial review", context())
+
+    assert "Net worth: ₹2,385,000" in answer
+    assert "Next focus: Emergency Fund" in answer
