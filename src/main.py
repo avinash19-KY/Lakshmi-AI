@@ -7,6 +7,10 @@ from src.rules.asset_allocation import (
 )
 from src.rules.cash_flow import calculate_monthly_surplus, calculate_savings_rate
 from src.rules.emergency_fund import calculate_emergency_fund_months
+from src.rules.emergency_fund import (
+    calculate_emergency_fund_gap,
+    calculate_emergency_fund_target,
+)
 from src.rules.financial_health import (
     calculate_emergency_fund_score,
     calculate_financial_health_score,
@@ -58,6 +62,13 @@ def main():
     emergency_fund_months = calculate_emergency_fund_months(
         profile.emergency_fund, profile.monthly_essential_expenses
     )
+    emergency_target_amount = calculate_emergency_fund_target(
+        profile.monthly_essential_expenses
+    )
+    emergency_fund_gap = calculate_emergency_fund_gap(
+        profile.emergency_fund,
+        profile.monthly_essential_expenses,
+    )
     emergency_fund_score = calculate_emergency_fund_score(emergency_fund_months)
     savings_rate_score = calculate_savings_rate_score(savings_rate)
     net_worth_score = calculate_net_worth_score(net_worth)
@@ -97,6 +108,9 @@ def main():
     print(f"Monthly Surplus   : ₹{monthly_surplus:,.2f}")
     print(f"Savings Rate      : {savings_rate:.1f}%")
     print(f"Emergency Coverage: {emergency_fund_months:.1f} months")
+    print(f"Target Coverage   : 12.0 months")
+    print(f"Target Amount     : ₹{emergency_target_amount:,.2f}")
+    print(f"More to Save      : ₹{emergency_fund_gap:,.2f}")
 
     for goal in goals:
         progress = calculate_goal_progress(goal.current_amount, goal.target_amount)

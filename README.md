@@ -10,6 +10,8 @@ coverage from structured financial data. It also tracks a goal and shows simple
 full-value funding scenarios without assuming investment returns, plus the
 current allocation of recorded assets by category. A transparent financial
 health score summarizes emergency reserves, savings capacity, and net worth.
+It also shows the emergency-fund target amount and the remaining gap to that
+target.
 The newest phase adds rule-based Portfolio Intelligence so Lakshmi AI can point
 to the weakest part of the financial picture and suggest the next area to focus
 on. It also applies a conservative investment guardrail: positive monthly

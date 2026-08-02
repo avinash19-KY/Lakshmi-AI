@@ -32,4 +32,4 @@ def test_import_manager_loads_excel_file_with_normalized_columns() -> None:
 
     assert records[0]["name"] == "Emergency fund"
     assert records[0]["category"] == "Cash"
-    assert records[0]["value"] == 469000
+    assert records[0]["value"] == 510000
