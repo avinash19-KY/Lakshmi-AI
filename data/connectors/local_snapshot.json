@@ -1,0 +1,26 @@
+[
+  {
+    "external_id": "LOC-EQ-001",
+    "name": "Fictional Equity Fund",
+    "category": "Equity",
+    "value": 150000.0,
+    "domain": "investment",
+    "as_of": "2026-08-02T00:00:00"
+  },
+  {
+    "external_id": "LOC-MF-001",
+    "name": "Fictional MF Growth",
+    "category": "Mutual Fund",
+    "value": 250000.0,
+    "domain": "investment",
+    "as_of": "2026-08-02T00:00:00"
+  },
+  {
+    "external_id": "LOC-CASH-001",
+    "name": "Broker Cash",
+    "category": "Cash",
+    "value": 50000.0,
+    "domain": "asset",
+    "as_of": "2026-08-02T00:00:00"
+  }
+]

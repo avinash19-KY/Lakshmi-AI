@@ -73,6 +73,54 @@ Notes:
   cleared and new rows are inserted when `ProfileService.load_data()` runs.
 - The database file is local-only and ignored by git (see `.gitignore`).
 
+## Portfolio Synchronization (Read-only connectors)
+
+Lakshmi AI can ingest read-only portfolio snapshots from external sources via a
+small connector/synchronization abstraction. This layer is intentionally
+provider-agnostic and strictly read-only: connectors may only fetch data — they
+cannot place orders or modify external accounts.
+
+Key points:
+- Connector interface: `PortfolioConnector.fetch_holdings()` returns canonical
+  holding records used by the sync service.
+- Local snapshot connector: a simple `LocalSnapshotConnector` reads JSON
+  snapshots from `data/connectors/` and is provided as an example adapter.
+- Synchronization service: `PortfolioSyncService` maps connector holdings to the
+  existing domain models and persists them via repository interfaces.
+- Provenance and ownership: synchronized records are tracked in the
+  `connector_mappings` SQLite table so connector-managed records are
+  distinguishable from manually-created records. Connector sync never deletes
+  manual records.
+- Idempotency and reconciliation: repeated syncs are idempotent. Updates to
+  holdings update existing connector-managed records. If a previously-mapped
+  holding is absent from a full snapshot, the connector-managed record is
+  removed.
+
+Running the example local connector sync (uses `data/connectors/local_snapshot.json`):
+
+```bash
+# Persist the sync results to a local DB (recommended)
+export LAKSHMI_DB_PATH=data/lakshmi.db
+python scripts/sync_local_snapshot.py
+```
+
+Alternatively supply a custom DB path:
+
+```bash
+export LAKSHMI_DB_PATH=/tmp/my_lakshmi.db
+python scripts/sync_local_snapshot.py
+```
+
+Difference from imports:
+- Imports (`data/*.csv` or `data/*.xlsx`) are user-provided dataset ingestion.
+- Synchronization is for externally-managed portfolios (connectors) and tracks
+  ownership so manual records are preserved.
+
+Privacy & security:
+- Connectors are read-only. No trading or external writes are possible.
+- Credentials (if added later) must never be committed or stored in the DB.
+- The local SQLite DB remains on your machine and is ignored by Git.
+
 ## Demo the import pipeline
 
 The repository includes sample import files in `data/import_examples/` for both CSV and Excel formats:
