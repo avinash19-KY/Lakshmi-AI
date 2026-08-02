@@ -206,19 +206,23 @@ class ScenarioEngine:
         )
 
     def allocation_change(self, portfolio: Dict[str, float], add_category: str, amount: Decimal) -> ScenarioResult:
-        """Simulate adding an amount to a category and compute allocation before/after."""
+        """Simulate adding an amount to a category and compute allocation before/after.
+
+        Use Decimal throughout and keep outputs as Decimal-quantized values; presentation may
+        convert to float or formatted strings as needed.
+        """
         before_tot = sum(Decimal(v) for v in portfolio.values())
-        after_port = dict(portfolio)
-        after_port[add_category] = float(Decimal(after_port.get(add_category, 0)) + amount)
+        after_port = {k: Decimal(v) for k, v in portfolio.items()}
+        after_port[add_category] = after_port.get(add_category, Decimal(0)) + Decimal(amount)
         after_tot = sum(Decimal(v) for v in after_port.values())
 
         before_alloc = {k: (Decimal(v) / Decimal(before_tot) if before_tot != 0 else Decimal(0)) for k, v in portfolio.items()}
         after_alloc = {k: (Decimal(v) / Decimal(after_tot) if after_tot != 0 else Decimal(0)) for k, v in after_port.items()}
 
         outputs = {
-            "before_allocation": {k: float(_quantize(v * 100)) for k, v in before_alloc.items()},
-            "after_allocation": {k: float(_quantize(v * 100)) for k, v in after_alloc.items()},
-            "change_percentage_points": {k: float(_quantize(after_alloc.get(k, Decimal(0)) * 100 - before_alloc.get(k, Decimal(0)) * 100)) for k in after_alloc.keys()},
+            "before_allocation": {k: _quantize(v * 100) for k, v in before_alloc.items()},
+            "after_allocation": {k: _quantize(v * 100) for k, v in after_alloc.items()},
+            "change_percentage_points": {k: _quantize(after_alloc.get(k, Decimal(0)) * 100 - before_alloc.get(k, Decimal(0)) * 100) for k in after_alloc.keys()},
         }
 
         assumptions = [Assumption("added_amount", amount, unit="currency", source="caller")]
@@ -315,7 +319,7 @@ class ScenarioEngine:
             if metric_key not in r.outputs:
                 raise ValueError(f"Metric '{metric_key}' not present in scenario outputs for {key}")
             metric = r.outputs.get(metric_key)
-            table[key] = {metric_key: float(metric) if metric is not None else None, "assumptions": r.assumptions}
+            table[key] = {metric_key: metric, "assumptions": r.assumptions}
 
         return ScenarioResult(
             scenario_type="comparison",

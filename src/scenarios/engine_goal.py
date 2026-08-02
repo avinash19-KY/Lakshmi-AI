@@ -5,7 +5,6 @@ from typing import Optional
 
 from src.scenarios.assumptions import Assumption
 from src.scenarios.results import ScenarioResult
-from src.rules.goals import calculate_remaining_goal_amount, calculate_monthly_goal_contribution
 
 
 def goal_funding_scenario(
@@ -77,14 +76,20 @@ def goal_funding_scenario(
         fv_principal = P * ((Decimal(1) + rate_per) ** N)
         fv_needed = Decimal(future_target) - fv_principal
         if r == 0:
-            # simple division
+            # simple division - timing does not change requirement when return is zero
             required_periodic = fv_needed / Decimal(N)
         else:
-            # i = rate_per, solve C * [ (1+i)^N -1 ] / i = fv_needed
+            # i = rate_per, solve for ordinary annuity (end-of-period):
+            # C_ord * [ (1+i)^N - 1 ] / i = fv_needed
             i = rate_per
             denom = ((Decimal(1) + i) ** N - Decimal(1))
             if denom != 0:
-                required_periodic = fv_needed * (i / denom)
+                required_ord = fv_needed * (i / denom)
+                if contribution_timing == "beginning":
+                    # annuity-due: payments are at beginning, so required contribution is lower by factor (1+i)
+                    required_periodic = required_ord / (Decimal(1) + i)
+                else:
+                    required_periodic = required_ord
             else:
                 required_periodic = None
 
@@ -92,8 +97,8 @@ def goal_funding_scenario(
         Assumption("annual_return", r, unit="decimal", source="caller"),
         Assumption("contributions_per_year", Decimal(m), unit="per_year", source="caller"),
         Assumption("years", Decimal(t), unit="years", source="caller"),
-        Assumption("contribution_timing", Decimal(1) if contribution_timing == "beginning" else Decimal(0), unit="flag", source="caller"),
     ]
+    # contribution_timing is exposed explicitly in metadata for clarity to callers/UI
     if inflation is not None:
         assumptions.append(Assumption("inflation", inflation, unit="decimal", source="caller"))
 
@@ -111,6 +116,7 @@ def goal_funding_scenario(
         "inflation_applied": inflation is not None,
         "inflation_rate": inflation if inflation is not None else None,
         "method": "compound_projection",
+        "contribution_timing": contribution_timing,
         "limitations": "Required periodic calculation assumes fixed rate and ordinary annuity math; does not account for taxes or changes in contribution timing beyond the provided flag.",
     }
 

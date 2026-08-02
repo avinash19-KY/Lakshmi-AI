@@ -128,10 +128,15 @@ class PortfolioSyncService:
         incoming_by_id: Dict[str, ConnectorHolding] = {h.external_id: h for h in holdings}
         existing_mappings = self._load_existing_mappings()
 
-        added = 0
-        updated = 0
-        unchanged = 0
-        removed = 0
+        # Track attempted counts during apply; only expose committed counts on success
+        attempted_added = 0
+        attempted_updated = 0
+        attempted_removed = 0
+
+        committed_added = 0
+        committed_updated = 0
+        committed_removed = 0
+        committed_unchanged = 0
 
         # Perform all persistence within a single SQLite transaction
         try:
@@ -144,7 +149,7 @@ class PortfolioSyncService:
                         domain_obj = self._to_domain_obj(holding)
                         try:
                             repo.update(domain_id, domain_obj, conn=conn)
-                            updated += 1
+                            attempted_updated += 1
                         except KeyError:
                             # mapped domain id missing — create new and update mapping
                             new_id = repo.add(domain_obj, conn=conn)
@@ -153,7 +158,7 @@ class PortfolioSyncService:
                                 "INSERT OR REPLACE INTO connector_mappings (connector_name, external_id, domain, domain_id, last_synced_at) VALUES (?, ?, ?, ?, ?)",
                                 (self.connector.name(), external_id, domain, new_id, now),
                             )
-                            added += 1
+                            attempted_added += 1
                     else:
                         # new mapping — create domain record and mapping
                         domain = holding.domain or "investment"
@@ -165,7 +170,7 @@ class PortfolioSyncService:
                             "INSERT OR REPLACE INTO connector_mappings (connector_name, external_id, domain, domain_id, last_synced_at) VALUES (?, ?, ?, ?, ?)",
                             (self.connector.name(), external_id, domain, new_id, now),
                         )
-                        added += 1
+                        attempted_added += 1
 
                 # Handle removals: any existing mapping not present in incoming should be removed (connector owns these records)
                 for external_id in list(existing_mappings.keys()):
@@ -181,21 +186,28 @@ class PortfolioSyncService:
                             "DELETE FROM connector_mappings WHERE connector_name = ? AND external_id = ?",
                             (self.connector.name(), external_id),
                         )
-                        removed += 1
+                        attempted_removed += 1
 
-                # Unchanged is (received - added - updated)
-                unchanged = len(holdings) - added - updated
+                # Unchanged is (received - added - updated) based on attempted counts during the transaction
+                attempted_unchanged = len(holdings) - attempted_added - attempted_updated
+
+                # If we reach here, transaction will commit — treat attempted as committed
+                committed_added = attempted_added
+                committed_updated = attempted_updated
+                committed_removed = attempted_removed
+                committed_unchanged = attempted_unchanged
 
         except Exception as exc:
             # On any persistence error, return failed SyncResult; transaction rollback handled by SQLiteDB.transaction
+            # Report 0 committed changes to avoid implying writes that were rolled back
             return SyncResult(
                 connector=self.connector.name(),
                 status="failed",
                 received=len(holdings),
-                added=added,
-                updated=updated,
-                removed=removed,
-                unchanged=unchanged,
+                added=0,
+                updated=0,
+                removed=0,
+                unchanged=len(holdings),
                 timestamp=timestamp,
                 errors=[str(exc)],
             )
@@ -204,10 +216,10 @@ class PortfolioSyncService:
             connector=self.connector.name(),
             status="success",
             received=len(holdings),
-            added=added,
-            updated=updated,
-            removed=removed,
-            unchanged=unchanged,
+            added=committed_added,
+            updated=committed_updated,
+            removed=committed_removed,
+            unchanged=committed_unchanged,
             timestamp=timestamp,
             errors=None,
         )

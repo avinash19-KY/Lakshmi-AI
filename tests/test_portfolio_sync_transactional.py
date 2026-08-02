@@ -61,6 +61,10 @@ def test_mid_sync_failure_rolls_back(tmp_path):
     # Run sync which should fail and rollback
     res2 = service.sync()
     assert res2.status == "failed"
+    # counts must reflect committed changes (none, because transaction rolled back)
+    assert res2.added == 0
+    assert res2.updated == 0
+    assert res2.removed == 0
 
     # Verify DB state unchanged compared to pre-sync
     with investment_repo._db.connect() as conn:

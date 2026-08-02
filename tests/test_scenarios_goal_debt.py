@@ -30,20 +30,29 @@ def test_goal_funding_funded_under_over():
 
 
 def test_goal_funding_required_periodic_contribution_and_determinism():
-    # test required periodic calculation
-    res = goal_funding_scenario(Decimal(0), Decimal(1200), 1, Decimal(0), contributions_per_year=12, annual_return=Decimal("0.12"))
-    # Required periodic contribution should be close to expected
+    # test required periodic calculation for end vs beginning timing
+    res_end = goal_funding_scenario(Decimal(0), Decimal(1200), 1, Decimal(0), contributions_per_year=12, annual_return=Decimal("0.12"), contribution_timing="end")
     # independent calculation: FV needed = 1200; i = 0.12/12; n = 12
     i = Decimal("0.12") / Decimal(12)
     n = 12
     denom = ((Decimal(1) + i) ** n - Decimal(1))
-    expected = Decimal(1200) * (i / denom)
-    # compare quantized to cents
-    assert res.outputs["required_periodic_contribution"].quantize(Decimal("0.01")) == expected.quantize(Decimal("0.01"))
+    expected_ord = Decimal(1200) * (i / denom)
+    assert res_end.outputs["required_periodic_contribution"].quantize(Decimal("0.01")) == expected_ord.quantize(Decimal("0.01"))
+
+    # beginning-of-period should require a smaller periodic contribution (annuity-due)
+    res_begin = goal_funding_scenario(Decimal(0), Decimal(1200), 1, Decimal(0), contributions_per_year=12, annual_return=Decimal("0.12"), contribution_timing="beginning")
+    req_begin = res_begin.outputs["required_periodic_contribution"].quantize(Decimal("0.01"))
+    req_end = res_end.outputs["required_periodic_contribution"].quantize(Decimal("0.01"))
+    assert req_begin < req_end
+
+    # zero return: both timings equal
+    res_zero_end = goal_funding_scenario(Decimal(0), Decimal(1200), 1, Decimal(0), contributions_per_year=12, annual_return=Decimal("0"), contribution_timing="end")
+    res_zero_begin = goal_funding_scenario(Decimal(0), Decimal(1200), 1, Decimal(0), contributions_per_year=12, annual_return=Decimal("0"), contribution_timing="beginning")
+    assert res_zero_end.outputs["required_periodic_contribution"].quantize(Decimal("0.01")) == res_zero_begin.outputs["required_periodic_contribution"].quantize(Decimal("0.01"))
 
     # determinism
     res2 = goal_funding_scenario(Decimal(0), Decimal(1200), 1, Decimal(0), contributions_per_year=12, annual_return=Decimal("0.12"))
-    assert res.outputs == res2.outputs
+    assert res_end.outputs == res2.outputs
 
 
 def test_debt_vs_investment_equal_rates_and_visibility():
