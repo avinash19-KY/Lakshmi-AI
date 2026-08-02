@@ -149,6 +149,32 @@ python scripts/demo_import_pipeline.py
 The next phase is a rule-based focus layer that highlights the weakest part of
 the current financial picture and explains why it deserves attention.
 
+## Investment Research Foundation & Deterministic Scenario Engine
+
+A lightweight research abstraction and deterministic scenario engine are available in this codebase for Phase 4.
+
+- ResearchProvider abstraction: `src.research.provider.ResearchProvider`
+- ResearchSnapshot: `src.research.provider.ResearchSnapshot` (includes instrument id, as-of date and source provenance)
+- LocalResearchProvider: deterministic local JSON provider `src.research.local_provider.LocalResearchProvider`
+
+Scenario Engine highlights (deterministic, reproducible, auditable):
+
+- Lump-sum growth projection
+- Recurring contribution (SIP) projection with optional annual step-up
+- Goal funding projection (uses existing goal rules where appropriate)
+- Deterministic portfolio shock (category-level shocks)
+- Allocation change simulation
+- Debt vs Investment deterministic comparison
+- Structured scenario comparison output
+
+Important design rules:
+
+- Facts (research snapshots) are separate from Assumptions (scenario inputs).
+- Scenarios are deterministic and do not mutate the portfolio or database.
+- No live market data, no Monte Carlo, no AI-driven calculations in V1.
+
+See `src/research` and `src/scenarios` for implementation and `tests/test_research_and_scenarios.py` for example usage.
+
 ## Run tests
 
 ```bash
