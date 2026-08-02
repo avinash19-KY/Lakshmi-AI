@@ -131,46 +131,74 @@ class PortfolioSyncService:
         added = 0
         updated = 0
         unchanged = 0
-
-        # Process incoming
-        for external_id, holding in incoming_by_id.items():
-            if external_id in existing_mappings:
-                domain, domain_id = existing_mappings[external_id]
-                repo = self._domain_repo(domain)
-                domain_obj = self._to_domain_obj(holding)
-                try:
-                    repo.update(domain_id, domain_obj)
-                    updated += 1
-                except KeyError:
-                    # mapped domain id missing — create new and update mapping
-                    new_id = repo.add(domain_obj)
-                    self._upsert_mapping(external_id, domain, new_id)
-                    added += 1
-            else:
-                # new mapping — create domain record and mapping
-                domain = holding.domain or "investment"
-                repo = self._domain_repo(domain)
-                domain_obj = self._to_domain_obj(holding)
-                new_id = repo.add(domain_obj)
-                self._upsert_mapping(external_id, domain, new_id)
-                added += 1
-
-        # Handle removals: any existing mapping not present in incoming should be removed (connector owns these records)
         removed = 0
-        for external_id in list(existing_mappings.keys()):
-            if external_id not in incoming_by_id:
-                domain, domain_id = existing_mappings[external_id]
-                repo = self._domain_repo(domain)
-                try:
-                    repo.delete(domain_id)
-                except KeyError:
-                    # already gone
-                    pass
-                self._delete_mapping(external_id)
-                removed += 1
 
-        # Unchanged is (received - added - updated)
-        unchanged = len(holdings) - added - updated
+        # Perform all persistence within a single SQLite transaction
+        try:
+            with self._db.transaction() as conn:
+                # Process incoming (creates / updates)
+                for external_id, holding in incoming_by_id.items():
+                    if external_id in existing_mappings:
+                        domain, domain_id = existing_mappings[external_id]
+                        repo = self._domain_repo(domain)
+                        domain_obj = self._to_domain_obj(holding)
+                        try:
+                            repo.update(domain_id, domain_obj, conn=conn)
+                            updated += 1
+                        except KeyError:
+                            # mapped domain id missing — create new and update mapping
+                            new_id = repo.add(domain_obj, conn=conn)
+                            now = datetime.now().isoformat()
+                            conn.execute(
+                                "INSERT OR REPLACE INTO connector_mappings (connector_name, external_id, domain, domain_id, last_synced_at) VALUES (?, ?, ?, ?, ?)",
+                                (self.connector.name(), external_id, domain, new_id, now),
+                            )
+                            added += 1
+                    else:
+                        # new mapping — create domain record and mapping
+                        domain = holding.domain or "investment"
+                        repo = self._domain_repo(domain)
+                        domain_obj = self._to_domain_obj(holding)
+                        new_id = repo.add(domain_obj, conn=conn)
+                        now = datetime.now().isoformat()
+                        conn.execute(
+                            "INSERT OR REPLACE INTO connector_mappings (connector_name, external_id, domain, domain_id, last_synced_at) VALUES (?, ?, ?, ?, ?)",
+                            (self.connector.name(), external_id, domain, new_id, now),
+                        )
+                        added += 1
+
+                # Handle removals: any existing mapping not present in incoming should be removed (connector owns these records)
+                for external_id in list(existing_mappings.keys()):
+                    if external_id not in incoming_by_id:
+                        domain, domain_id = existing_mappings[external_id]
+                        repo = self._domain_repo(domain)
+                        try:
+                            repo.delete(domain_id, conn=conn)
+                        except KeyError:
+                            # already gone
+                            pass
+                        conn.execute(
+                            "DELETE FROM connector_mappings WHERE connector_name = ? AND external_id = ?",
+                            (self.connector.name(), external_id),
+                        )
+                        removed += 1
+
+                # Unchanged is (received - added - updated)
+                unchanged = len(holdings) - added - updated
+
+        except Exception as exc:
+            # On any persistence error, return failed SyncResult; transaction rollback handled by SQLiteDB.transaction
+            return SyncResult(
+                connector=self.connector.name(),
+                status="failed",
+                received=len(holdings),
+                added=added,
+                updated=updated,
+                removed=removed,
+                unchanged=unchanged,
+                timestamp=timestamp,
+                errors=[str(exc)],
+            )
 
         return SyncResult(
             connector=self.connector.name(),
