@@ -45,6 +45,34 @@ Python code:
 python -m src.main
 ```
 
+## Persistence (SQLite)
+
+SQLite persistence is available as an optional, local-only data store. By default
+the application continues to use in-memory repositories and the `data/` import
+files. To enable persistence:
+
+1. Set the LAKSHMI_DB_PATH environment variable to the desired database file.
+   Example (Unix/macOS):
+
+```bash
+export LAKSHMI_DB_PATH=data/lakshmi.db
+python -m src.main
+```
+
+2. Running the demo import pipeline with the environment variable set will
+   persist imported data into the configured SQLite database:
+
+```bash
+export LAKSHMI_DB_PATH=data/lakshmi.db
+python scripts/demo_import_pipeline.py
+```
+
+Notes:
+- The database is created and initialized automatically if it does not exist.
+- Imports use a replace-all strategy for each entity: the repositories are
+  cleared and new rows are inserted when `ProfileService.load_data()` runs.
+- The database file is local-only and ignored by git (see `.gitignore`).
+
 ## Demo the import pipeline
 
 The repository includes sample import files in `data/import_examples/` for both CSV and Excel formats:
@@ -58,6 +86,13 @@ The repository includes sample import files in `data/import_examples/` for both 
 Run the demo script to import these files, populate repositories, and print the same financial health report:
 
 ```bash
+python scripts/demo_import_pipeline.py
+```
+
+To persist the demo import results to SQLite:
+
+```bash
+export LAKSHMI_DB_PATH=data/lakshmi.db
 python scripts/demo_import_pipeline.py
 ```
 

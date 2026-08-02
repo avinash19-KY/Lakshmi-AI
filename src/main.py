@@ -44,7 +44,23 @@ def banner():
 def main():
     banner()
 
-    service = ProfileService()
+    # If LAKSHMI_DB_PATH is set, use SQLite-backed repositories. Otherwise default to in-memory repositories.
+    import os
+    from src.repositories.sqlite_factory import create_sqlite_repositories
+
+    db_path = os.environ.get("LAKSHMI_DB_PATH")
+    if db_path:
+        asset_repo, liability_repo, investment_repo, goal_repo, profile_repo = create_sqlite_repositories(db_path)
+        service = ProfileService(
+            asset_repository=asset_repo,
+            liability_repository=liability_repo,
+            investment_repository=investment_repo,
+            goal_repository=goal_repo,
+            profile_repository=profile_repo,
+        )
+    else:
+        service = ProfileService()
+
     service.load_data()
 
     profile = service.profile_repository.get_all()[0]

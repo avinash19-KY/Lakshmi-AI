@@ -40,7 +40,23 @@ def banner() -> None:
 def main() -> None:
     banner()
     sample_directory = Path(__file__).resolve().parents[1] / "data" / "import_examples"
-    service = ProfileService(sample_directory)
+    import os
+    db_path = os.environ.get("LAKSHMI_DB_PATH")
+    if db_path:
+        from src.repositories.sqlite_factory import create_sqlite_repositories
+
+        asset_repo, liability_repo, investment_repo, goal_repo, profile_repo = create_sqlite_repositories(db_path)
+        service = ProfileService(
+            sample_directory,
+            asset_repository=asset_repo,
+            liability_repository=liability_repo,
+            investment_repository=investment_repo,
+            goal_repository=goal_repo,
+            profile_repository=profile_repo,
+        )
+    else:
+        service = ProfileService(sample_directory)
+
     service.load_data()
 
     profile = service.profile_repository.get_all()[0]
